@@ -1,5 +1,10 @@
-# AISplitSheet
+# AI Split Sheet — Music AI Solutions
 
-AISplitSheet is a Multipkatform GPT Agent that uses artificial intelligence to automatically generate split sheets...
-...
-...outlined in the End User License Agreement (EULA) available on the AISplitSheet website.
+Final build includes logo.svg and favicon.svg placeholders. Replace public/logo.svg with your PNG if you prefer.
+
+Quick start:
+
+```bash
+npm install
+npm start
+```
