@@ -1,0 +1,292 @@
+"use client";
+
+import React, { useState } from "react";
+
+// Interfaces
+interface Collaborator {
+  id: string;
+  name: string;
+  role: string;
+  share: number;
+}
+
+export default function Home() {
+  const [step, setStep] = useState<"hav" | "builder">("hav");
+  
+  // Estados HAV
+  const [inviteCode, setInviteCode] = useState("");
+  const [artistName, setArtistName] = useState("");
+  const [status, setStatus] = useState<"idle" | "verifying">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  // Estados Split Sheet Builder
+  const [songTitle, setSongTitle] = useState("");
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([
+    { id: "1", name: "", role: "Compositor / Intérprete", share: 50 },
+    { id: "2", name: "", role: "Productor / Co-autor", share: 50 },
+  ]);
+  const [isGenerated, setIsGenerated] = useState(false);
+
+  // Manejador HAV (Círculo Cero)
+  const handleHAVSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus("verifying");
+    setErrorMessage("");
+
+    setTimeout(() => {
+      if (inviteCode.trim().toUpperCase().startsWith("CIRCULO")) {
+        // Pre-llenar el primer colaborador con el nombre del artista verificado
+        setCollaborators([
+          { id: "1", name: artistName, role: "Artista Principal", share: 50 },
+          { id: "2", name: "", role: "Productor / Colaborador", share: 50 },
+        ]);
+        setStep("builder");
+      } else {
+        setStatus("idle");
+        setErrorMessage("Código de invitación inválido. Verifica con el Círculo Cero.");
+      }
+    }, 1000);
+  };
+
+  // Funciones del Builder
+  const addCollaborator = () => {
+    setCollaborators([
+      ...collaborators,
+      { id: Date.now().toString(), name: "", role: "Co-autor / Músico", share: 0 }
+    ]);
+  };
+
+  const updateCollaborator = (id: string, field: keyof Collaborator, value: string | number) => {
+    setCollaborators(
+      collaborators.map(c => c.id === id ? { ...c, [field]: value } : c)
+    );
+  };
+
+  const totalShare = collaborators.reduce((sum, c) => sum + Number(c.share || 0), 0);
+
+  const handleGenerateCertificate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (totalShare !== 100) {
+      alert("El porcentaje total debe sumar exactamente 100%.");
+      return;
+    }
+    setIsGenerated(true);
+  };
+
+  return (
+    <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 selection:bg-blue-500 selection:text-white">
+      
+      {step === "hav" ? (
+        // --- PASO 1: PANTALLA HAV (Human Artist Verification) ---
+        <div className="max-w-md w-full bg-slate-900/60 border border-slate-800 backdrop-blur-xl p-8 rounded-2xl shadow-2xl relative overflow-hidden animate-fadeIn">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent" />
+
+          <div className="text-center mb-8">
+            <span className="text-xs font-semibold tracking-widest uppercase text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
+              Human Artist Verification (HAV)
+            </span>
+            <h1 className="text-3xl font-bold tracking-tight mt-4 text-white">
+              Spleetify
+            </h1>
+            <p className="text-sm text-slate-400 mt-2">
+              La música es arte. Los royalties, matemáticas exactas. Accede con tu invitación exclusiva para asegurar tu catálogo.
+            </p>
+          </div>
+
+          <form onSubmit={handleHAVSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1 uppercase tracking-wider">
+                Nombre Artístico o Proyecto
+              </label>
+              <input
+                type="text"
+                required
+                value={artistName}
+                onChange={(e) => setArtistName(e.target.value)}
+                placeholder="Ej. Santiago Q"
+                className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1 uppercase tracking-wider">
+                Código de Invitación (Círculo Cero)
+              </label>
+              <input
+                type="text"
+                required
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+                placeholder="Ej. CIRCULO-01"
+                className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 text-sm font-mono uppercase"
+              />
+            </div>
+
+            {errorMessage && (
+              <p className="text-xs text-rose-400 text-center bg-rose-500/10 border border-rose-500/20 py-2 rounded-lg">
+                {errorMessage}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={status === "verifying"}
+              className="w-full mt-2 py-3.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-medium rounded-xl transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {status === "verifying" ? "Validando identidad..." : "Ingresar al Círculo Cero ⚡"}
+            </button>
+          </form>
+
+          <div className="mt-8 text-center border-t border-slate-800/80 pt-4">
+            <p className="text-xs text-slate-500">
+              Powered by <span className="text-slate-400 font-medium">music-ai-solutions</span> • Red Base
+            </p>
+          </div>
+        </div>
+      ) : (
+        // --- PASO 2: CONSTRUCTOR DE SPLIT SHEETS ---
+        <div className="max-w-2xl w-full bg-slate-900/60 border border-slate-800 backdrop-blur-xl p-8 rounded-2xl shadow-2xl relative overflow-hidden animate-fadeIn">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent" />
+
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <span className="text-xs font-semibold tracking-widest uppercase text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                HAV Verificado ✓ ({artistName})
+              </span>
+              <h2 className="text-2xl font-bold tracking-tight mt-3 text-white">
+                Nuevo Acuerdo de Reparto
+              </h2>
+            </div>
+            <button
+              onClick={() => setStep("hav")}
+              className="text-xs text-slate-400 hover:text-white transition-colors bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-700/50 cursor-pointer"
+            >
+              Salir
+            </button>
+          </div>
+
+          {isGenerated ? (
+            <div className="space-y-6 py-4">
+              <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-center space-y-3">
+                <div className="w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto text-xl">
+                  ✓
+                </div>
+                <h3 className="text-lg font-semibold text-white">¡Split Sheet Registrado en Base!</h3>
+                <p className="text-xs text-slate-300">
+                  La obra <strong className="text-white">"{songTitle}"</strong> cuenta con validez digital asegurada.
+                </p>
+              </div>
+
+              <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-2 text-sm">
+                <div className="flex justify-between text-slate-400 border-b border-slate-800 pb-2">
+                  <span>Obra:</span>
+                  <span className="text-white font-medium">{songTitle}</span>
+                </div>
+                {collaborators.map((c, idx) => (
+                  <div key={idx} className="flex justify-between items-center py-1">
+                    <span className="text-slate-300">{c.name || "Sin nombre"} ({c.role})</span>
+                    <span className="font-mono text-blue-400">{c.share}%</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  onClick={() => alert("Descargando PDF certificado...")}
+                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl transition-all shadow-lg shadow-blue-600/30 text-center cursor-pointer"
+                >
+                  Descargar PDF Certificado 📄
+                </button>
+                <button
+                  onClick={() => setIsGenerated(false)}
+                  className="py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium rounded-xl transition-all cursor-pointer"
+                >
+                  Crear Otro
+                </button>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleGenerateCertificate} className="space-y-6">
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1 uppercase tracking-wider">
+                  Título de la Canción / Obra
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={songTitle}
+                  onChange={(e) => setSongTitle(e.target.value)}
+                  placeholder="Ej. Neón en Medellín"
+                  className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 text-sm"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    Colaboradores y Porcentajes
+                  </label>
+                  <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${totalShare === 100 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                    Total: {totalShare}%
+                  </span>
+                </div>
+
+                {collaborators.map((c) => (
+                  <div key={c.id} className="grid grid-cols-1 md:grid-cols-12 gap-2 bg-slate-950/40 p-3 rounded-xl border border-slate-800/80 items-center">
+                    <div className="md:col-span-5">
+                      <input
+                        type="text"
+                        required
+                        placeholder="Nombre del artista"
+                        value={c.name}
+                        onChange={(e) => updateCollaborator(c.id, "name", e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div className="md:col-span-4">
+                      <input
+                        type="text"
+                        required
+                        placeholder="Rol"
+                        value={c.role}
+                        onChange={(e) => updateCollaborator(c.id, "role", e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div className="md:col-span-3 flex items-center gap-2">
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        max="100"
+                        value={c.share}
+                        onChange={(e) => updateCollaborator(c.id, "share", Number(e.target.value))}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white text-center font-mono focus:outline-none focus:border-blue-500"
+                      />
+                      <span className="text-xs text-slate-500">%</span>
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={addCollaborator}
+                  className="text-xs text-blue-400 hover:text-blue-300 font-medium py-1 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  + Añadir otro colaborador
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                Sellar Split Sheet en Base ⚡
+              </button>
+            </form>
+          )}
+        </div>
+      )}
+    </main>
+  );
+}
